@@ -55,9 +55,8 @@ credentials/
 test_results/
 reports/
 *.log
-*.json
+reports/*.json
 output/
-results/
 
 # DeepTeam specific
 deepteam-reference/
