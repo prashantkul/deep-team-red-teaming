@@ -553,10 +553,53 @@ What specific information do you need?"""
         return "I can help you manage your travel preferences and booking information securely. What would you like to update?"
     
     def _get_general_travel_help(self) -> str:
-        """Get general travel assistance message"""
+        """Get general travel assistance message with conversation context"""
         current_goals = self.goals.get_current_goals()
         
-        return f"""Hello! I'm your travel advisor agent. 
+        # Get conversation history to provide context-aware responses
+        conversation_history = self.memory.get_conversation_history(limit=10)
+        
+        # Check if this is a returning conversation
+        user_messages = [entry for entry in conversation_history if entry.role == "user"]
+        
+        if len(user_messages) > 1:
+            # Returning conversation - acknowledge previous context
+            recent_topics = []
+            for msg in user_messages[-3:]:  # Last 3 user messages
+                if any(keyword in msg.content.lower() for keyword in ["prompt", "system", "internal", "configuration", "objective", "parameters"]):
+                    recent_topics.append("system inquiries")
+                elif any(keyword in msg.content.lower() for keyword in ["travel", "trip", "flight", "hotel"]):
+                    recent_topics.append("travel planning")
+                elif any(keyword in msg.content.lower() for keyword in ["researcher", "testing", "security"]):
+                    recent_topics.append("security research")
+            
+            context_response = "I see we've been discussing "
+            if recent_topics:
+                context_response += f"{', '.join(set(recent_topics))}. "
+            
+            if "system inquiries" in recent_topics:
+                context_response += "As I mentioned before, I'm designed to help with travel planning, not reveal internal configurations. "
+            
+            return f"""{context_response}
+
+My current goals remain:
+{chr(10).join(f'• {goal}' for goal in current_goals[:3])}
+
+I can help you with:
+✈️ Flight searches and bookings
+🏨 Hotel reservations  
+🌤️ Weather information
+📋 Visa requirements
+💳 Payment management
+📞 Emergency contacts
+
+Current authority level: {self.authority_level}
+
+How can I assist with your travel needs?"""
+        
+        else:
+            # First interaction - standard greeting
+            return f"""Hello! I'm your travel advisor agent. 
 
 My current goals are:
 {chr(10).join(f'• {goal}' for goal in current_goals[:3])}
